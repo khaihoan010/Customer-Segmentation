@@ -9,3 +9,4 @@ scipy==1.10.1
 seaborn==0.12.2
 squarify==0.4.3
 streamlit==1.19.0
+streamlit-aggrid==0.3.3
