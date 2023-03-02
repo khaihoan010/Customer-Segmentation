@@ -136,29 +136,31 @@ def visual_chart(data_RFM):
 if condition == 'Introduction':
     #st.image(os.path.join(os.path.abspath(''), 'data', 'dataset-cover.jpg'))
     st.subheader('About')
+
+    st.image("Data/RFM.jpeg")
     
     ## FALTA O CHECK ON GITHUB
     st.write("""
     This application provides the entire purchase history up to the end of June 1998 
     of the cohort of 23,570 individuals who made their first-ever purchase at CDNOW in the first quarter of 1997.
+    
     The prediction are made by dividing customers into different segments based on the RFM (Recency-Frequency-Monetary) score.
-
-    All the operations in the dataset were already done and stored as csv files inside the data directory. If you want to check the code, go through the notebook directory in the [github repository](https://github.com/arturlunardi/predict_rental_prices_streamlit).
     """)
 
-    st.subheader('Look over the RFM Segmentation')
-
+    st.subheader('Overview about RFM Segmentation')
+    
     st.write("""
-    RFM Segmentation
+    RFM analysis is a method for segmenting customer behavior based on data.
+    RFM stands for recency, frequency, and monetary value.
 
-    You can check on the sidebar:
 
-    EDA (Exploratory Data Analysis)
-    Model Prediction
-    New Predict
-    The prediction are made by RFM Segmentation to understand CDNOW customer
+    Customers will be divided into groups according to when they last made a purchase, how frequently they've made purchases in the past, and how much money they've spent altogether. These three variables have all shown to be reliable indicators of a  customer's willingness to engage in marketing messages and offers.
+    
+    To begin, I would conduct RFM analysis to obtain the desired values and divide customers into various groups based on our experience and specific field. Those features will be used as an input in K-means, to determine similarity and we can segment customers into different clusters. K-Means uses Euclidean distance as a distance metric to calculate the distance between the data points
 
     """)
+
+    st.image("Data/Segments_clustering.png")
 # ------------- EDA ------------------------
 
 elif condition == 'EDA':
@@ -176,14 +178,14 @@ elif condition == 'EDA':
     st.markdown(original_title_data,unsafe_allow_html=True)
     st.dataframe(data)
 
-    original_title_describe = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Describe</b></p>'
+    original_title_describe = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Descriptive Statistics</b></p>'
     #st.subheader("Describe")
     st.markdown(original_title_describe,unsafe_allow_html=True)
     st.write(des)
 
     #st.metric("Shape",str(data.shape))
 
-    original_title_null = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Kiểm tra và đánh giá các giá trị null</b></p>'
+    original_title_null = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Check null and duplicated data</b></p>'
     st.markdown(original_title_null,unsafe_allow_html=True)
     data_check_null=data.isnull().sum().to_frame('counts')
     st.write(data_check_null)
@@ -225,20 +227,21 @@ elif condition == 'EDA':
 
 
     ###Biểu đồ
+    original_title_describe = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Visulization</b></p>'
     most_customer=data.groupby('customer_id').size().reset_index()
     most_customer.columns = ['customer_id', 'frequency']
  
     most_customer_frequecy=most_customer.sort_values("frequency",ascending=False).head(10)
 
     fig_most_customer=plt.figure(figsize=(11, 7))
-    sns.barplot(x="customer_id", y="frequency", data=most_customer_frequecy, palette="Set3",order=most_customer_frequecy["customer_id"])
+    sns.barplot(x="customer_id", y="frequency", data=most_customer_frequecy, palette="flare_r",order=most_customer_frequecy["customer_id"])
     plt.title("Top 10 customer with high frequency of spending",fontsize=20,color="blue",y=1.05)
     st.pyplot(fig_most_customer)
 
     most_customer_monetery=data.groupby('customer_id').sum().reset_index()
     most_customer_monetery=most_customer_monetery.sort_values("dollar_value",ascending=False).head(10)
     fig_most_customer_monetery=plt.figure(figsize=(11, 7))
-    sns.barplot(x="customer_id", y="dollar_value", data=most_customer_monetery, palette="Set3",order=most_customer_monetery["customer_id"])
+    sns.barplot(x="customer_id", y="dollar_value", data=most_customer_monetery, palette="flare_r",order=most_customer_monetery["customer_id"])
     plt.title("Top 10 customer spending the most",fontsize=20,color="blue",y=1.05)
     st.pyplot(fig_most_customer_monetery)
 
@@ -256,10 +259,88 @@ elif condition == 'KMeans Clustering':
         [i for i in list_Model]  
     )
 
-    st.image("Data/elbow_method.png")
+    original_title_scatter = '<p style="color:Blue; font-size: 30px; text-align: left;"><b>Since kmean is sensitive to distance, we need to check the deviation of the dataset</b></p>'
+    st.markdown(original_title_scatter,unsafe_allow_html=True)
 
-    st.subheader("Based on this Elbow method figure, we can consider running a Kmeans model with ",select_model_k)
+    code_Kmeans_model ='''
+def check_skew(df_skew, column):
+    skew = stats.skew(df_skew[column])
+    skewtest = stats.skewtest(df_skew[column])
+    plt.title('Distribution of ' + column)
+    sns.distplot(df_skew[column])
+    print("{}'s: Skew: {}, : {}".format(column, skew, skewtest))
+    return
+        '''
+    
+    st.code(code_Kmeans_model,language="python")
+
+    code_plt_check_skew ='''
+from scipy import stats
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
+
+RFM_Table_scaled = np.log(RFM_Table_scaled+1)
+plt.figure(figsize=(9, 9))
+plt.subplot(3, 1, 1)
+check_skew(RFM_Table_scaled,'Recency')
+plt.subplot(3, 1, 2)
+check_skew(RFM_Table_scaled,'Frequency')
+plt.subplot(3, 1, 3)
+check_skew(RFM_Table_scaled,'Monetary')
+plt.tight_layout()
+        '''
+    
+    st.code(code_plt_check_skew,language="python")
+    st.image("Data/checkskew.png")
+
+
+    original_title_scatter = '<p style="color:Blue; font-size: 30px; text-align: left;"><b>Apply StandardScaler to normalize data</b></p>'
+    st.markdown(original_title_scatter,unsafe_allow_html=True)
+
+    code_scale_data ='''
+scaler = StandardScaler()
+scaler.fit(RFM_Table_scaled)
+RFM_Table_scaled = scaler.transform(RFM_Table_scaled)
+        '''
+    
+    st.code(code_scale_data,language="python")
+
+    original_title_scatter = '<p style="color:Blue; font-size: 30px; text-align: left;"><b>Plot elbow method to select which k is the best fit</b></p>'
+    st.markdown(original_title_scatter,unsafe_allow_html=True)
+
+    code_elbow ='''
+from sklearn.cluster import KMeans
+sse = {}
+for k in range(1, 20):
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    kmeans.fit(RFM_Table_scaled)
+    sse[k] = kmeans.inertia_
+
+plt.title('The Elbow Method')
+plt.xlabel('k')
+plt.ylabel('SSE')
+sns.pointplot(x=list(sse.keys()), y=list(sse.values()))
+plt.savefig('elbow_method.png')
+plt.show()
+        '''
+    
+    st.code(code_elbow,language="python")
+
+
+
+
+    st.image("Data/elbow_method.png")
+    original_title_null = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Based on this Elbow method figure, we can consider running a Kmeans model with </b></p>'
+    st.markdown(original_title_null,unsafe_allow_html=True)
     if select_model_k=="K = 5":
+
+        code_k5 ='''
+model_Kmeans_5 = KMeans(n_clusters=5, random_state=42)
+model_Kmeans_5.fit(RFM_Table_scaled)
+model_Kmeans_5.labels_.shape
+        '''
+    
+        st.code(code_k5,language="python")
         
         rfm_agg_kmeans_k_5=pd.read_csv("Data/rfm_agg_kmeans_k_5.csv", index_col=0)
 
@@ -280,6 +361,13 @@ elif condition == 'KMeans Clustering':
         st.plotly_chart(fig, use_container_width=True)
 
     elif select_model_k=="K = 6":
+        code_k5 ='''
+model_Kmeans_5 = KMeans(n_clusters=5, random_state=42)
+model_Kmeans_5.fit(RFM_Table_scaled)
+model_Kmeans_5.labels_.shape
+        '''
+    
+        st.code(code_k5,language="python")
         rfm_agg_kmeans_k_6=pd.read_csv("Data/rfm_agg_kmeans_k_6.csv", index_col=0)
 
         st.write(rfm_agg_kmeans_k_6)
@@ -343,7 +431,15 @@ elif condition == 'New Prediction':
             if uploaded_file_1 is not None:
                 #data = pd.read_csv(uploaded_file_1)
 
-                data = pd.read_csv(uploaded_file_1, delim_whitespace=True, header = None, names = ['customer_id', 'date', 'number_of_cds', 'dollar_value'])
+                check_type=str(uploaded_file_1.type)
+
+                if check_type=="text/csv":
+                    data = pd.read_csv(uploaded_file_1,encoding= 'unicode_escape')
+                    data.rename(columns={ data.columns[1]: "customer_id",data.columns[1]: "date",data.columns[1]: "number_of_cds", data.columns[1]: "dollar_value"}, inplace = True)
+                elif check_type=="text/plain":
+                    data = pd.read_csv(uploaded_file_1, delim_whitespace=True, header = None, names = ['customer_id', 'date', 'number_of_cds', 'dollar_value'])
+
+                
                 original_title_null = '<p style="font-family:Garamond, serif; color:Blue; font-size: 30px;"><b>Raw Data</b></p>'
                 st.markdown(original_title_null,unsafe_allow_html=True)
                 st.dataframe(data)
@@ -374,11 +470,12 @@ elif condition == 'New Prediction':
             st.markdown(original_title_note,unsafe_allow_html=True)
             
             text_="""
-            - Here is example of input data.
-            - To change the values\'s cell, Click on it
+            - Here is an example of input data.
+            - To change the values\'s cell, Click on it and type your expected value
             - To add another row, Click Add
-            - To remove a row, Click Delete"""
-            
+            - To remove a row, Click Delete
+            - After all, tick the checkbox to select how many row you wanna use as input
+            """            
             st.markdown(text_,unsafe_allow_html=True)
         
 
